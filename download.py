@@ -48,11 +48,11 @@ def main():
 
     with MT(key=args.key, output=args.output) as mt:
         for tid in args.id:
-            logging.info(f'{tid}')
+            logging.info(f'tid={tid}')
             if args.verbose:
                 detail = mt.detail(tid=tid)
-                logging.info('\t%s', detail['status']['discount'])
-                logging.info('\t%s', detail['name'])
+                logging.info('status=%s', detail['status']['discount'])
+                logging.info('name=%s', detail['name'])
             mt.download(tid=tid)
 
 if __name__ == '__main__':

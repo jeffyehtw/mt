@@ -70,7 +70,7 @@ def main():
 
         for item in items:
             tid = item['id']
-            logging.info(f'{tid}')
+            logging.info(f'tid={tid}')
 
             detail = mt.detail(tid=tid)
             # skip uncertain torrent
@@ -79,8 +79,8 @@ def main():
                 continue
 
             if args.verbose:
-                logging.info('\t%s', detail['status']['discount'])
-                logging.info('\t%s', detail['name'])
+                logging.info('status=%s', detail['status']['discount'])
+                logging.info('name=%s', detail['name'])
 
             # free exception
             if args.free and 'FREE' != detail['status']['discount']:
