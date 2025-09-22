@@ -19,12 +19,17 @@ class MT():
         self.rss = rss
         self.output = output
         self.url = Url()
+        self.list = None
 
     def __enter__(self):
+        if self.output is not None:
+            with open(os.path.join(self.output, 'list.json')) as fp:
+                self.list = json.load(fp)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
+        with open(os.path.join(self.output, 'list.json'), 'w') as fp:
+            json.dump(self.list, fp, indent=4)
 
     def latest(self) -> list[dict]:
         try:
@@ -33,7 +38,8 @@ class MT():
                 ret = xmltodict.parse(response.text, attr_prefix='')
                 return ret['rss']['channel']['item']
             else:
-                logging.error('Request failed')
+                logging.info('action=skip')
+                logging.info('reason=!response')
         except Exception as e:
             logging.error(str(e))
         return None
@@ -58,24 +64,34 @@ class MT():
                     response = requests.get(url)
                     if response.status_code == 200:
                         if not self.exist(tid):
-                            logging.info('Download')
+                            logging.info('action=download')
                             torrent = os.path.join(self.output, f'{tid}.torrent')
                             with open(torrent, 'wb') as fp:
                                 fp.write(response.content)
                         else:
-                            logging.info('Exist')
+                            logging.info('action=skip')
+                            logging.info('reason=exist')
                     else:
-                        logging.error('Download failed')
+                        logging.info('action=skip')
+                        logging.info('reason=!response')
             else:
-                logging.error('Request failed')
+                logging.info('action=skip')
+                logging.info('reason=!response')
+
+            if self.list is None:
+                self.list = []
+            self.list.append(tid)
 
         except Exception as e:
             logging.error(str(e))
 
     def exist(self, tid: str) -> bool:
-        torrent = os.path.join(self.output, f'{tid}.torrent')
-        synology = os.path.join(self.output, f'{tid}.torrent.loaded')
-        return os.path.exists(torrent) or os.path.exists(synology)
+        if self.list is None:
+            torrent = os.path.join(self.output, f'{tid}.torrent')
+            synology = os.path.join(self.output, f'{tid}.torrent.loaded')
+            return os.path.exists(torrent) or os.path.exists(synology)
+        else:
+            return tid in self.list
 
     def detail(self, tid: str) -> dict:
         payload = { 'id': tid }
@@ -94,9 +110,11 @@ class MT():
                 if ret['message'] == 'SUCCESS':
                     return ret['data']
                 else:
-                    logging.error('Request failed')
+                    logging.info('action=skip')
+                    ogging.info('reason=!response')
             else:
-                logging.error('Request failed')
+                logging.info('action=skip')
+                logging.info('reason=!response')
         except Exception as e:
             logging.error(str(e))
 
@@ -132,7 +150,8 @@ class MT():
             if response.status_code == 200:
                 return response.json()['data']['data']
             else:
-                logging.error('Request failed')
+                logging.info('action=skip')
+                logging.info('reason=!response')
 
         except Exception as e:
-            logging.error('Request failed')
+            logging.error(str(e))
