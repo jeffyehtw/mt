@@ -7,6 +7,8 @@ import requests
 import xmltodict
 import logging
 
+logger = logging.getLogger(__name__)
+
 class Url():
     def __init__(self):
         self.detail = 'https://api.m-team.cc/api/torrent/detail'
@@ -38,10 +40,10 @@ class MT():
                 ret = xmltodict.parse(response.text, attr_prefix='')
                 return ret['rss']['channel']['item']
             else:
-                logging.info('action=skip')
-                logging.info('reason=!response')
+                logger.info('action=skip')
+                logger.info('reason=!response')
         except Exception as e:
-            logging.error(str(e))
+            logger.error(str(e))
         return None
 
     def download(self, tid: str) -> None:
@@ -64,26 +66,26 @@ class MT():
                     response = requests.get(url)
                     if response.status_code == 200:
                         if not self.exist(tid):
-                            logging.info('action=download')
+                            logger.info('action=download')
                             torrent = os.path.join(self.output, f'{tid}.torrent')
                             with open(torrent, 'wb') as fp:
                                 fp.write(response.content)
                         else:
-                            logging.info('action=skip')
-                            logging.info('reason=exist')
+                            logger.info('action=skip')
+                            logger.info('reason=exist')
                     else:
-                        logging.info('action=skip')
-                        logging.info('reason=!response')
+                        logger.info('action=skip')
+                        logger.info('reason=!response')
             else:
-                logging.info('action=skip')
-                logging.info('reason=!response')
+                logger.info('action=skip')
+                logger.info('reason=!response')
 
             if self.list is None:
                 self.list = []
             self.list.append(tid)
 
         except Exception as e:
-            logging.error(str(e))
+            logger.error(str(e))
 
     def exist(self, tid: str) -> bool:
         if self.list is None:
@@ -110,13 +112,13 @@ class MT():
                 if ret['message'] == 'SUCCESS':
                     return ret['data']
                 else:
-                    logging.info('action=skip')
-                    ogging.info('reason=!response')
+                    logger.info('action=skip')
+                    logger.info('reason=!response')
             else:
-                logging.info('action=skip')
-                logging.info('reason=!response')
+                logger.info('action=skip')
+                logger.info('reason=!response')
         except Exception as e:
-            logging.error(str(e))
+            logger.error(str(e))
 
         return None
 
@@ -150,8 +152,8 @@ class MT():
             if response.status_code == 200:
                 return response.json()['data']['data']
             else:
-                logging.info('action=skip')
-                logging.info('reason=!response')
+                logger.info('action=skip')
+                logger.info('reason=!response')
 
         except Exception as e:
-            logging.error(str(e))
+            logger.error(str(e))

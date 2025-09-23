@@ -4,6 +4,8 @@ import json
 import logging
 import argparse
 
+from modules.mt import MT
+
 __description__ = ''
 __epilog__ = 'Report bugs to <yehcj.tw@gmail.com>'
 __choices__ = {
@@ -17,12 +19,24 @@ __choices__ = {
     'rankings'
 }
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-from modules.mt import MT
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'app.log'
+))
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 def load(file: str) -> dict:
     config = None
@@ -47,6 +61,9 @@ def main():
     parser.add_argument('--verbose', action='store_true', default=False)
     args = parser.parse_args(sys.argv[1:])
 
+    logger.info(__file__)
+    logger.info('args=%s', args)
+
     # load configuration file
     config = load(os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
@@ -59,6 +76,8 @@ def main():
     if args.output is None:
         args.output = config['output']
 
+    file_handler = logging.FileHandler(os.path.join(args.output, 'app.log'))
+
     with MT(key=args.key, output=args.output) as mt:
         items = mt.search(
             mode=args.mode,
@@ -70,21 +89,23 @@ def main():
 
         for item in items:
             tid = item['id']
-            logging.info(f'tid={tid}')
+            logger.info(f'tid={tid}')
 
             detail = mt.detail(tid=tid)
             # skip uncertain torrent
             if detail is None:
-                logging.error('Get detail failed')
+                logger.info('action=skip')
+                logger.info('reason=!detail')
                 continue
 
             if args.verbose:
-                logging.info('status=%s', detail['status']['discount'])
-                logging.info('name=%s', detail['name'])
+                logger.info('status=%s', detail['status']['discount'])
+                logger.info('name=%s', detail['name'])
 
             # free exception
             if args.free and 'FREE' != detail['status']['discount']:
-                logging.info('Not free')
+                logger.info('action=skip')
+                logger.info('reason=!free')
                 continue
 
             mt.download(tid=tid)

@@ -4,15 +4,29 @@ import json
 import logging
 import argparse
 
+from modules.mt import MT
+
 __description__ = ''
 __epilog__ = 'Report bugs to <yehcj.tw@gmail.com>'
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-from modules.mt import MT
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+file_handler = logging.FileHandler(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    'app.log'
+))
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(formatter)
+
+stream_handler = logging.StreamHandler(sys.stdout)
+stream_handler.setLevel(logging.INFO)
+stream_handler.setFormatter(formatter)
+
+logger.addHandler(file_handler)
+logger.addHandler(stream_handler)
 
 def load(file: str) -> dict:
     config = None
@@ -33,6 +47,9 @@ def main():
     parser.add_argument('--free', action='store_true', default=False, help='')
     parser.add_argument('--verbose', action='store_true', default=False)
     args = parser.parse_args(sys.argv[1:])
+
+    logger.info(__file__)
+    logger.info('args=%s', args)
 
     # load configuration file
     config = load(os.path.join(
