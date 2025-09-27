@@ -45,8 +45,18 @@ def main():
     parser.add_argument('--key', type=str, default=None)
     parser.add_argument('--output', type=str, default=None)
     parser.add_argument('--verbose', action='store_true', default=False)
+    parser.add_argument(
+        '--log-level',
+        type=str,
+        choices={ 'INFO', 'DEBUG' },
+        default='INFO',
+        help=''
+    )
     args = parser.parse_args(sys.argv[1:])
 
+    logger.setLevel(getattr(logging, args.log_level))
+    file_handler.setLevel(getattr(logging, args.log_level))
+    stream_handler.setLevel(getattr(logging, args.log_level))
     logger.info(__file__)
     logger.info('args=%s', args)
 
