@@ -76,6 +76,9 @@ class MT():
                     else:
                         logger.info('action=skip')
                         logger.info('reason=!response')
+                else:
+                    logger.info('action=skip')
+                    logger.info('reason=!response')
             else:
                 logger.info('action=skip')
                 logger.info('reason=!response')
