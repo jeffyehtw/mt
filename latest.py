@@ -25,7 +25,11 @@ class Latest:
         logger.debug('')
 
         try:
-            response = requests.get(self.rss, headers=headers(self.key))
+            response = requests.get(
+                self.rss,
+                headers=headers(self.key),
+                timeout=30
+            )
             if response.status_code == 200:
                 ret = xmltodict.parse(response.text, attr_prefix='')
                 return ret['rss']['channel']['item']

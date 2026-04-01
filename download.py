@@ -40,7 +40,7 @@ class Download:
 
             # Step 2: Append connection options and fetch the actual torrent file
             torrent_url = data + '&useHttps=true&type=ipv4'
-            response = requests.get(torrent_url)
+            response = requests.get(torrent_url, timeout=30)
 
             if response.status_code != 200:
                 logger.info(

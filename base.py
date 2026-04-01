@@ -6,6 +6,8 @@ import random
 import requests
 import logging
 
+from utils import MTeamAPIError
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://api.m-team.cc/api'
@@ -22,21 +24,33 @@ def post(key: str, url: str, payload: dict, form: bool = False) -> dict:
 
     # Endpoints that expect form-encoded data (detail, download)
     if form:
-        response = requests.post(url, headers=headers(key), data=payload)
+        response = requests.post(
+            url,
+            headers=headers(key),
+            data=payload,
+            timeout=30
+        )
     # Endpoints that accept JSON (search)
     else:
-        response = requests.post(url, headers=headers(key), json=payload)
+        response = requests.post(
+            url,
+            headers=headers(key),
+            json=payload,
+            timeout=30
+        )
 
     if response.status_code != 200:
-        logger.info(
-            'action=skip, reason=!response, status=%s',
+        logger.error(
+            'action=post, reason=!response, status=%s',
             response.status_code
         )
-        return None
+        raise MTeamAPIError(f'M-Team API request failed with status {response.status_code}')
 
     ret = response.json()
     if ret.get('message') != 'SUCCESS':
-        logger.info('action=skip, reason=%s', ret.get('message'))
-        return None
+        error_msg = ret.get('message')
+        logger.error('action=post, reason=%s', error_msg)
+        raise MTeamAPIError(f'M-Team API error: {error_msg}')
 
     return ret.get('data')
+
