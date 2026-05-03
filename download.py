@@ -22,8 +22,8 @@ class Download:
         self.output = output
         self.list = None  # shared reference, set by MT after __enter__
 
-    def __call__(self, tid: str, detail: dict = None) -> None:
-        '''Download torrent by ID and optionally save its metadata'''
+    def __call__(self, tid: str, detail: dict = None) -> tuple[str, str]:
+        '''Download torrent by ID and optionally save its metadata. Returns (file_path, download_url).'''
         logger.debug('tid=%s', tid)
 
         try:
@@ -36,7 +36,7 @@ class Download:
             )
             if data is None:
                 logger.info('action=skip, reason=!data')
-                return
+                return None, None
 
             # Step 2: Append connection options and fetch the actual torrent file
             torrent_url = data + '&useHttps=true&type=ipv4'
@@ -47,7 +47,7 @@ class Download:
                     'action=skip, reason=!response, status=%s',
                     response.status_code
                 )
-                return
+                return None, None
 
             # Step 3: Save the .torrent file
             logger.info('action=download, tid=%s', tid)
@@ -66,5 +66,43 @@ class Download:
                 self.list = []
             self.list.append(tid)
 
+            return torrent_path, torrent_url
+
         except Exception as e:
             logger.error(str(e))
+        
+        return None, None
+
+    def resolve_destination(self, detail: dict) -> str:
+        '''Resolve download destination based on category in detail'''
+        settings_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            'config', 'settings.json'
+        )
+        try:
+            with open(settings_path, 'r') as f:
+                settings = json.load(f)
+            
+            category_paths = settings.get('category_paths', {})
+            
+            # Default category
+            category_name = 'Other'
+            
+            if detail:
+                category = detail.get('category')
+                if isinstance(category, dict):
+                    category_name = category.get('name', 'Other')
+                elif isinstance(category, str):
+                    category_name = category
+            
+            # Map category name to path using fuzzy match
+            # Sort keys by length descending to match more specific categories first (e.g., "Adult-Movie" before "Movie")
+            sorted_keys = sorted(category_paths.keys(), key=len, reverse=True)
+            for key in sorted_keys:
+                if key.lower() in category_name.lower():
+                    return category_paths[key]
+            
+            return category_paths.get('Other', '/volume1/Download')
+        except Exception as e:
+            logger.error(f"Error resolving destination: {e}")
+            return '/volume1/Download'
