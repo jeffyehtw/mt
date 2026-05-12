@@ -3,6 +3,8 @@ Check if a torrent has already been downloaded
 '''
 import os
 import logging
+import glob
+from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -10,22 +12,32 @@ logger = logging.getLogger(__name__)
 class Exist:
     '''Check if a torrent has already been downloaded'''
 
-    def __init__(self, output: str) -> None:
-        '''Initialize with output directory'''
-        logger.debug('output=%s', output)
+    def __init__(self) -> None:
+        pass
 
-        self.output = output
-        self.list = None  # shared reference, set by MT after __enter__
-
-    def __call__(self, tid: str) -> bool:
+    def __call__(
+        self,
+        tid: str,
+        search_dir: Optional[str] = None,
+        history: Optional[List[str]] = None
+    ) -> bool:
         '''Return True if the torrent has already been downloaded'''
-        logger.debug('tid=%s', tid)
+        logger.debug('tid=%s, search_dir=%s', tid, search_dir)
 
-        if self.list is not None:
-            return tid in self.list
+        if history is not None and tid in history:
+            return True
 
-        # Fall back to checking for the files on disk
-        torrent = os.path.join(self.output, f'{tid}.torrent')
-        loaded = os.path.join(self.output, f'{tid}.torrent.loaded')
+        if search_dir is not None:
+            # Check for the files on disk recursively
+            torrents = glob.glob(
+                os.path.join(search_dir, '**', f'{tid}.torrent'),
+                recursive=True
+            )
+            loaded = glob.glob(
+                os.path.join(search_dir, '**', f'{tid}.torrent.loaded'),
+                recursive=True
+            )
 
-        return os.path.exists(torrent) or os.path.exists(loaded)
+            return len(torrents) > 0 or len(loaded) > 0
+            
+        return False

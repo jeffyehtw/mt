@@ -1,6 +1,7 @@
 '''
 Download torrent files from M-Team
 '''
+from typing import Dict, Optional, Tuple
 import os
 import json
 import requests
@@ -14,17 +15,18 @@ logger = logging.getLogger(__name__)
 class Download:
     '''Download a torrent file from M-Team'''
 
-    def __init__(self, key: str, output: str) -> None:
-        '''Initialize with API key and output directory'''
-        logger.debug('output=%s', output)
-
+    def __init__(self, key: str) -> None:
+        '''Initialize with API key'''
         self.key = key
-        self.output = output
-        self.list = None  # shared reference, set by MT after __enter__
 
-    def __call__(self, tid: str, detail: dict = None) -> tuple[str, str]:
-        '''Download torrent by ID and optionally save its metadata. Returns (file_path, download_url).'''
-        logger.debug('tid=%s', tid)
+    def __call__(
+        self,
+        tid: str,
+        local_dir: str,
+        detail: Dict = None
+    ) -> Tuple[Optional[str], Optional[str]]:
+        '''Download torrent by ID to local_dir. Returns (file_path, url).'''
+        logger.debug('tid=%s, local_dir=%s', tid, local_dir)
 
         try:
             # Step 1: Get a temporary download token/URL from the API
@@ -38,7 +40,7 @@ class Download:
                 logger.info('action=skip, reason=!data')
                 return None, None
 
-            # Step 2: Append connection options and fetch the actual torrent file
+            # Step 2: Append connection options and fetch torrent file
             torrent_url = data + '&useHttps=true&type=ipv4'
             response = requests.get(torrent_url, timeout=30)
 
@@ -49,22 +51,31 @@ class Download:
                 )
                 return None, None
 
+            # Check if it's a JSON error message instead of a torrent file
+            if response.content.startswith(b'{"code":'):
+                try:
+                    error_data = response.json()
+                    if error_data.get('message'):
+                        logger.error(
+                            'action=download_fail, reason=%s',
+                            error_data['message']
+                        )
+                        return None, None
+                except Exception:
+                    pass
+
             # Step 3: Save the .torrent file
-            logger.info('action=download, tid=%s', tid)
-            torrent_path = os.path.join(self.output, f'{tid}.torrent')
+            logger.info('action=download, tid=%s, dir=%s', tid, local_dir)
+            os.makedirs(local_dir, exist_ok=True)
+            torrent_path = os.path.join(local_dir, f'{tid}.torrent')
             with open(torrent_path, 'wb') as fp:
                 fp.write(response.content)
 
             # Step 4: Optionally save torrent metadata as a .info file
             if detail is not None:
-                info_path = os.path.join(self.output, f'{tid}.info')
+                info_path = os.path.join(local_dir, f'{tid}.info')
                 with open(info_path, 'w') as fp:
                     json.dump(detail, fp, indent=4)
-
-            # Step 5: Record this tid in the history list
-            if self.list is None:
-                self.list = []
-            self.list.append(tid)
 
             return torrent_path, torrent_url
 
@@ -72,37 +83,3 @@ class Download:
             logger.error(str(e))
         
         return None, None
-
-    def resolve_destination(self, detail: dict) -> str:
-        '''Resolve download destination based on category in detail'''
-        settings_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            'config', 'settings.json'
-        )
-        try:
-            with open(settings_path, 'r') as f:
-                settings = json.load(f)
-            
-            category_paths = settings.get('category_paths', {})
-            
-            # Default category
-            category_name = 'Other'
-            
-            if detail:
-                category = detail.get('category')
-                if isinstance(category, dict):
-                    category_name = category.get('name', 'Other')
-                elif isinstance(category, str):
-                    category_name = category
-            
-            # Map category name to path using fuzzy match
-            # Sort keys by length descending to match more specific categories first (e.g., "Adult-Movie" before "Movie")
-            sorted_keys = sorted(category_paths.keys(), key=len, reverse=True)
-            for key in sorted_keys:
-                if key.lower() in category_name.lower():
-                    return category_paths[key]
-            
-            return category_paths.get('Other', '/volume1/Download')
-        except Exception as e:
-            logger.error(f"Error resolving destination: {e}")
-            return '/volume1/Download'

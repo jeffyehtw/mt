@@ -1,6 +1,7 @@
 '''
 Shared HTTP helpers for M-Team API requests
 '''
+from typing import Dict
 import time
 import random
 import requests
@@ -12,11 +13,11 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://api.m-team.cc/api'
 
-def headers(key: str) -> dict:
+def headers(key: str) -> Dict:
     '''Return common API request headers'''
     return {'x-api-key': key}
 
-def post(key: str, url: str, payload: dict, form: bool = False) -> dict:
+def post(key: str, url: str, payload: Dict, form: bool = False) -> Dict:
     '''Send a POST request with a random delay to avoid rate limiting'''
     logger.debug('url=%s, payload=%s, form=%s', url, payload, form)
 
@@ -44,7 +45,9 @@ def post(key: str, url: str, payload: dict, form: bool = False) -> dict:
             'action=post, reason=!response, status=%s',
             response.status_code
         )
-        raise MTeamAPIError(f'M-Team API request failed with status {response.status_code}')
+        raise MTeamAPIError(
+            f'M-Team API request failed with status {response.status_code}'
+        )
 
     ret = response.json()
     if ret.get('message') != 'SUCCESS':

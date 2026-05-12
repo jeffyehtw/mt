@@ -1,6 +1,7 @@
 '''
 Search for torrents on M-Team
 '''
+from typing import List
 import logging
 
 from mt.base import BASE_URL, post
@@ -24,7 +25,7 @@ class Search:
         index: int,
         size: int,
         keyword: str = None
-    ) -> list[dict]:
+    ) -> List[dict]:
         '''Search for torrents by mode, filter, and keyword'''
         logger.debug(
             'mode=%s, free=%s, index=%s, size=%s, keyword=%s',

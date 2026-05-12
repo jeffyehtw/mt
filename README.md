@@ -68,11 +68,12 @@ for item in items:
 
 ## Configuration
 
-Credentials and paths are typically stored in `mt.json` and loaded by the calling script:
+The submodule expects credentials to be passed explicitly during initialization. Example configurations (`mt.json.example`) are provided in the project root:
 
 ```json
 {
     "key": "your-api-key",
+    "rss": "your-rss-url",
     "output": "/path/to/torrent/output"
 }
 ```

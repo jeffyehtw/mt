@@ -1,6 +1,7 @@
 '''
 Fetch the latest torrents from the M-Team RSS feed
 '''
+from typing import List
 import requests
 import xmltodict
 import logging
@@ -20,7 +21,7 @@ class Latest:
         self.key = key
         self.rss = rss
 
-    def __call__(self) -> list[dict]:
+    def __call__(self) -> List[dict]:
         '''Return the latest torrent items from the RSS feed'''
         logger.debug('')
 

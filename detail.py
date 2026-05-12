@@ -1,6 +1,7 @@
 '''
 Fetch detailed metadata for a torrent from M-Team
 '''
+from typing import Dict
 import logging
 
 from mt.base import BASE_URL, post
@@ -16,7 +17,7 @@ class Detail:
 
         self.key = key
 
-    def __call__(self, tid: str) -> dict:
+    def __call__(self, tid: str) -> Dict:
         '''Return detailed metadata for a torrent by ID'''
         logger.debug('tid=%s', tid)
 
