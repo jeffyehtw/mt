@@ -7,11 +7,13 @@ import random
 import requests
 import logging
 
-from utils import MTeamAPIError
-
 logger = logging.getLogger(__name__)
 
 BASE_URL = 'https://api.m-team.cc/api'
+
+class MTeamAPIError(Exception):
+    '''Custom exception for M-Team API errors'''
+    pass
 
 def headers(key: str) -> Dict:
     '''Return common API request headers'''
